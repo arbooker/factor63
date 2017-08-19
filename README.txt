@@ -1,4 +1,3 @@
-# factor63
 This is the documentation for factor63, a library for primality testing
 and factoring of integers less than 2^63, by Andrew R. Booker. It is free
 software, distributed under the terms of the GPLv3. For more information,
