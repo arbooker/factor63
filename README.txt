@@ -6,7 +6,7 @@ see the file LICENSE.txt.
 
 Prior to using the library, you must download and decompress the
 associated data table from
-http://people.maths.bris.ac.uk/~maarb/factor.bin.xz
+http://people.maths.bris.ac.uk/~maarb/code/factor.bin.xz
 
 The source code for the library consists of a single C file, factor63.c.
 It exports four functions:
