@@ -175,7 +175,7 @@ int factor63(i64 *p,int *e,i64 n0) {
 
 	if (!(n & 1)) {
 		p[k] = 2, e[k] = __builtin_ctzl(n);
-		n >>= e[0];
+		n >>= e[k];
 		k++;
 	}
 	f = oddgcd(n,16294579238595022365ul);
