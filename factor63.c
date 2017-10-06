@@ -265,6 +265,10 @@ int factor63(i64 *p,int *e,i64 n0) {
 		p[k] = *ptr++; e[k] = 0;
 		do m /= p[k], e[k]++; while (m % p[k] == 0);
 		k++;
+		if (m >= M && fastisprime63(m)) {
+			p[k] = m, e[k] = 1; k++;
+			return k;
+		}
 	}
 	k += smallfactors63(p+k,e+k,m,&m);
 	return k;
