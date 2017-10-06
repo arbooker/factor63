@@ -158,7 +158,10 @@ static inline u64 oddgcd(u64 x,u64 y) {
 }
 
 int factor63(i64 *p,int *e,i64 n0) {
-#define iterations 300000
+// iterations can be any number > 13193 such that
+//   iterations % maxstride == 0 && collision_index[iterations-1] != 0
+// maxstride must be a power of 2
+#define iterations 300288
 #define maxstride 256
 	u64 m,n,nbar,x,y,y0,f,one;
 	u32 *ptr,s;
@@ -206,7 +209,7 @@ int factor63(i64 *p,int *e,i64 n0) {
 
 	// Pollard rho
 	m = n, y = f = one;
-	for (i=1;i<=iterations;i<<=1) {
+	for (i=1;i<iterations;i<<=1) {
 		mask = (i < maxstride) ? i-1 : maxstride-1;
 		x = y0 = y; j = 0;
 		do {
@@ -255,21 +258,44 @@ int factor63(i64 *p,int *e,i64 n0) {
 
 			if (!(j&mask)) y0 = y;
 			f = one;
-		} while (j < i && i+j <= iterations);
+		} while (j < i && i+j < iterations);
 	}
 
-	// only remaining primes are those with long cycles
-	ptr = collision_table+collision_index[iterations];
-	while (m >= M) {
-		while (m % *ptr) ptr++;
-		p[k] = *ptr++; e[k] = 0;
-		do m /= p[k], e[k]++; while (m % p[k] == 0);
-		k++;
-		if (m >= M && fastisprime63(m)) {
-			p[k] = m, e[k] = 1; k++;
-			return k;
-		}
+	// the only remaining primes are those with long cycles
+	// since iterations > 13193, every prime below 2^21 has been considered,
+	//   so m is either a prime square or semiprime
+	ptr = collision_table+collision_index[iterations-1];
+	while (m % *ptr) ptr++;
+	p[k] = *ptr; m /= p[k];
+	if (m == p[k])
+		e[k] = 2;
+	else {
+		e[k++] = 1;
+		p[k] = m, e[k] = 1;
 	}
-	k += smallfactors63(p+k,e+k,m,&m);
+	k++;
 	return k;
 }
+
+#if 0
+#include <stdio.h>
+int main(int argc,char *argv[]) {
+	long n,p[16];
+	int e[16];
+	int i,j,k;
+
+	initfactor63("factor.bin");
+	for (i=1;i<argc;i++)
+		if (sscanf(argv[i],"%ld",&n) == 1) {
+			k = factor63(p,e,n);
+			printf("%ld",n);
+			for (j=0;j<k;j++) {
+				printf(" %c %ld",j?'*':'=',p[j]);
+				if (e[j] > 1) printf("^%d",e[j]);
+			}
+			printf("\n");
+		}
+
+	return 0;
+}
+#endif
