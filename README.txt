@@ -31,4 +31,5 @@ The input n must be odd and positive (results are undefined otherwise).
 int factor63(int64_t *p,int *e,int64_t n);
 Places the prime factors of n in p and their exponents in e, and returns
 the number of factors. If n is negative, p[0] is set to -1 and e[0] is
-set to 1.
+set to 1. The largest possible return value is 16; p and e should be
+sized accordingly.
