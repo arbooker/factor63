@@ -279,18 +279,46 @@ int factor63(i64 *p,int *e,i64 n0) {
 
 #if 0
 #include <stdio.h>
+
+static void sort_factors(int n, i64 *f, int *e) {
+  int i, j, te;
+  i64 tf;
+  for (i = 1; i < n; i++)
+    for (j = i; j > 0 && f[j-1] > f[j]; j--)
+      { tf=f[j-1]; f[j-1]=f[j]; f[j]=tf;  te=e[j-1]; e[j-1]=e[j]; e[j]=te; }
+}
+
 int main(int argc,char *argv[]) {
-	long n,p[16];
+	i64 n,p[16];
 	int e[16];
 	int i,j,k;
 
-	initfactor63("factor.bin");
+	if (!initfactor63("factor.bin")) {
+		fprintf(stderr, "Cannot read factor data\n");
+		return -1;
+	}
+
+	if (argc <= 1) {  /* no args, read from stdin */
+		char line[1024];
+		while (fgets(line, sizeof(line), stdin)) {
+			unsigned long n = strtoul(line, 0, 10);
+			int nfactors = factor63(p, e, (i64) n);
+			sort_factors(nfactors, p, e);
+			printf("%lu:", n);
+			for (i = 0; i < nfactors; i++)
+				for (j = 0; j < e[i]; j++)
+					printf(" %lld", p[i]);
+			printf("\n");
+		}
+		return(0);
+	}
+
 	for (i=1;i<argc;i++)
-		if (sscanf(argv[i],"%ld",&n) == 1) {
+		if (sscanf(argv[i],"%ld",(long*)&n) == 1) {
 			k = factor63(p,e,n);
-			printf("%ld",n);
+			printf("%ld",(long)n);
 			for (j=0;j<k;j++) {
-				printf(" %c %ld",j?'*':'=',p[j]);
+				printf(" %c %ld",j?'*':'=',(long)p[j]);
 				if (e[j] > 1) printf("^%d",e[j]);
 			}
 			printf("\n");
