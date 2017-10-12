@@ -60,15 +60,22 @@ const u16 *initfactor63(const char *db) {
 	return factor_table;
 }
 
+static inline uint64_t _uint128_mulredc(uint64_t x, uint64_t y, uint64_t n, uint64_t npi)
+{
+  union { u128 d; u64 l[2]; } t;
+  t.d = (u128) x*y;
+  t.d += (t.l[0] * npi) * (u128) n;
+  t.l[1] -= n;
+  return t.l[1] + (n & ((i64)t.l[1] >> 63));
+}
+#define mulredc(x,y)  _uint128_mulredc(x,y,n,nbar)
+
 // returns true if n passes a strong Fermat test to base 2
 // assumes n is odd and 1 < n < 2^63
 static inline int isprobableprime(u64 n) {
 	u64 one,neg1,x,nbar;
 	i32 k;
 	i64 q;
-	union { u128 d; u64 l[2]; } t;
-#define mulredc(x,y) (t.d=(u128)(x)*(y),t.d+=(t.l[0]*nbar)*(u128)n,\
-t.l[1]-=n,t.l[1]+(n&((i64)t.l[1]>>63)))
 
 	// compute nbar = -n^{-1} mod 2^64 by Newton's method
 	k = ((n+1)>>2<<3)-n; // correct mod 2^4
@@ -125,7 +132,6 @@ int isprime63(i64 n) {
 // return a list of the prime factors of f
 // and remove them from n
 static int smallfactors63(i64 *p,int *e,u32 f,u64 *n) {
-	u64 x;
 	u32 y;
 	int k;
 
@@ -166,7 +172,6 @@ int factor63(i64 *p,int *e,i64 n0) {
 	u64 m,n,nbar,x,y,y0,f,one;
 	u32 *ptr,s;
 	int i,j,k,mask;
-	union { u128 d; u64 l[2]; } t;
 
 	k = 0;
 	if (n0 < 0) {
@@ -279,18 +284,46 @@ int factor63(i64 *p,int *e,i64 n0) {
 
 #if 0
 #include <stdio.h>
+
+static void sort_factors(int n, i64 *f, int *e) {
+  int i, j, te;
+  i64 tf;
+  for (i = 1; i < n; i++)
+    for (j = i; j > 0 && f[j-1] > f[j]; j--)
+      { tf=f[j-1]; f[j-1]=f[j]; f[j]=tf;  te=e[j-1]; e[j-1]=e[j]; e[j]=te; }
+}
+
 int main(int argc,char *argv[]) {
-	long n,p[16];
+	i64 n,p[16];
 	int e[16];
 	int i,j,k;
 
-	initfactor63("factor.bin");
+	if (!initfactor63("factor.bin")) {
+		fprintf(stderr, "Cannot read factor data\n");
+		return -1;
+	}
+
+	if (argc <= 1) {  /* no args, read from stdin */
+		char line[1024];
+		while (fgets(line, sizeof(line), stdin)) {
+			unsigned long n = strtoul(line, 0, 10);
+			int nfactors = factor63(p, e, (i64) n);
+			sort_factors(nfactors, p, e);
+			printf("%lu:", n);
+			for (i = 0; i < nfactors; i++)
+				for (j = 0; j < e[i]; j++)
+					printf(" %lld", p[i]);
+			printf("\n");
+		}
+		return(0);
+	}
+
 	for (i=1;i<argc;i++)
-		if (sscanf(argv[i],"%ld",&n) == 1) {
+		if (sscanf(argv[i],"%ld",(long*)&n) == 1) {
 			k = factor63(p,e,n);
-			printf("%ld",n);
+			printf("%ld",(long)n);
 			for (j=0;j<k;j++) {
-				printf(" %c %ld",j?'*':'=',p[j]);
+				printf(" %c %ld",j?'*':'=',(long)p[j]);
 				if (e[j] > 1) printf("^%d",e[j]);
 			}
 			printf("\n");
