@@ -60,15 +60,22 @@ const u16 *initfactor63(const char *db) {
 	return factor_table;
 }
 
+static inline uint64_t _uint128_mulredc(uint64_t x, uint64_t y, uint64_t n, uint64_t npi)
+{
+  union { u128 d; u64 l[2]; } t;
+  t.d = (u128) x*y;
+  t.d += (t.l[0] * npi) * (u128) n;
+  t.l[1] -= n;
+  return t.l[1] + (n & ((i64)t.l[1] >> 63));
+}
+#define mulredc(x,y)  _uint128_mulredc(x,y,n,nbar)
+
 // returns true if n passes a strong Fermat test to base 2
 // assumes n is odd and 1 < n < 2^63
 static inline int isprobableprime(u64 n) {
 	u64 one,neg1,x,nbar;
 	i32 k;
 	i64 q;
-	union { u128 d; u64 l[2]; } t;
-#define mulredc(x,y) (t.d=(u128)(x)*(y),t.d+=(t.l[0]*nbar)*(u128)n,\
-t.l[1]-=n,t.l[1]+(n&((i64)t.l[1]>>63)))
 
 	// compute nbar = -n^{-1} mod 2^64 by Newton's method
 	k = ((n+1)>>2<<3)-n; // correct mod 2^4
@@ -125,7 +132,6 @@ int isprime63(i64 n) {
 // return a list of the prime factors of f
 // and remove them from n
 static int smallfactors63(i64 *p,int *e,u32 f,u64 *n) {
-	u64 x;
 	u32 y;
 	int k;
 
@@ -166,7 +172,6 @@ int factor63(i64 *p,int *e,i64 n0) {
 	u64 m,n,nbar,x,y,y0,f,one;
 	u32 *ptr,s;
 	int i,j,k,mask;
-	union { u128 d; u64 l[2]; } t;
 
 	k = 0;
 	if (n0 < 0) {
